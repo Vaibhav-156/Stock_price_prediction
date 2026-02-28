@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --accent: #3b82f6;
+  --profit: #22c55e;
+  --loss: #ef4444;
+  --warning: #f59e0b;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 3px; }
+
+/* Card base */
+.card {
+  @apply bg-card-bg border border-card-border rounded-xl p-5;
+}
+
+/* Signal badge */
+.badge {
+  @apply px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider;
+}
+.badge-high { @apply bg-profit/20 text-profit; }
+.badge-medium { @apply bg-warning/20 text-yellow-400; }
+.badge-low { @apply bg-neutral/20 text-neutral; }
+.badge-bull { @apply bg-profit/20 text-profit; }
+.badge-bear { @apply bg-loss/20 text-loss; }
+.badge-sideways { @apply bg-blue-500/20 text-blue-400; }
+
+/* Probability bar */
+.prob-bar {
+  @apply h-2 rounded-full;
+  transition: width 0.5s ease;
+}
