@@ -25,9 +25,11 @@ class PriceBarOut(BaseModel):
 class SignalOut(BaseModel):
     symbol: str
     signal_date: date
-    probability: float = Field(..., description="Ensemble probability of positive 5-day return")
+    probability: float = Field(..., description="Ensemble probability of positive 5-day return (includes sentiment)")
     xgb_probability: Optional[float] = None
     lstm_probability: Optional[float] = None
+    sentiment_score: Optional[float] = Field(None, description="News sentiment VADER compound score (-1 to +1)")
+    sentiment_label: Optional[str] = Field(None, description="BULLISH / BEARISH / NEUTRAL from news")
     confidence_level: str
     direction: str
     suggested_position_size: Optional[float] = None

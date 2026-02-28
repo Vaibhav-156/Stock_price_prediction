@@ -21,6 +21,7 @@ export default function SignalDashboard({ signals, onSelect, selectedSymbol }: P
             <tr className="text-slate-400 border-b border-card-border">
               <th className="text-left py-2 px-2">Symbol</th>
               <th className="text-left py-2 px-2">Probability</th>
+              <th className="text-left py-2 px-2">Sentiment</th>
               <th className="text-left py-2 px-2">Confidence</th>
               <th className="text-left py-2 px-2">Direction</th>
               <th className="text-left py-2 px-2">Stop Loss</th>
@@ -54,6 +55,25 @@ export default function SignalDashboard({ signals, onSelect, selectedSymbol }: P
                       {(s.probability * 100).toFixed(1)}%
                     </span>
                   </div>
+                </td>
+                <td className="py-2.5 px-2">
+                  {s.sentiment_label ? (
+                    <span
+                      className={clsx(
+                        "badge",
+                        s.sentiment_label === "BULLISH"
+                          ? "badge-bull"
+                          : s.sentiment_label === "BEARISH"
+                          ? "badge-bear"
+                          : "badge-sideways"
+                      )}
+                    >
+                      {s.sentiment_label === "BULLISH" ? "▲" : s.sentiment_label === "BEARISH" ? "▼" : "◆"}{" "}
+                      {s.sentiment_score !== null ? s.sentiment_score.toFixed(2) : ""}
+                    </span>
+                  ) : (
+                    <span className="text-slate-500 text-xs">—</span>
+                  )}
                 </td>
                 <td className="py-2.5 px-2">
                   <span className={clsx("badge", badgeClass(s.confidence_level))}>

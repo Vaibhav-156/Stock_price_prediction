@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     ml_probability_threshold: float = Field(0.65, alias="ML_PROBABILITY_THRESHOLD")
     ml_xgboost_weight: float = Field(0.6, alias="ML_XGBOOST_WEIGHT")
     ml_lstm_weight: float = Field(0.4, alias="ML_LSTM_WEIGHT")
+    ml_sentiment_weight: float = Field(0.15, alias="ML_SENTIMENT_WEIGHT")
 
     # Risk
     risk_per_trade_pct: float = Field(1.0, alias="RISK_PER_TRADE_PCT")

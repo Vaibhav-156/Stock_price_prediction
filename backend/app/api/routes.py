@@ -101,9 +101,21 @@ async def generate_signals(req: SignalRequest):
 
             current_price = float(df.iloc[-1]["close"])
 
+            # ── Fetch news sentiment for this stock ──
+            sent_score = None
+            sent_label = None
+            try:
+                news_data = await fetch_stock_news(symbol, max_articles=10)
+                if news_data and news_data.get("article_count", 0) > 0:
+                    sent_score = news_data["sentiment_score"]
+                    sent_label = news_data["sentiment_label"]
+                    logger.info(f"[SENTIMENT] {symbol}: score={sent_score}, label={sent_label}")
+            except Exception as e:
+                logger.debug(f"[SENTIMENT] Could not fetch for {symbol}: {e}")
+
             if models_ready:
-                # ── Use trained ML models ──
-                prediction = ensemble.predict(df, index_df)
+                # ── Use trained ML models (sentiment-aware) ──
+                prediction = ensemble.predict(df, index_df, sentiment_score=sent_score)
                 if "error" in prediction:
                     continue
 
@@ -115,12 +127,16 @@ async def generate_signals(req: SignalRequest):
                         "probability": prediction["probability"],
                         "xgb_probability": prediction.get("xgb_probability"),
                         "lstm_probability": prediction.get("lstm_probability"),
+                        "sentiment_score": sent_score,
+                        "sentiment_label": sent_label,
                         "confidence_level": "LOW",
                         "direction": "NEUTRAL",
                         "atr": prediction.get("atr"),
                         "regime": prediction.get("regime"),
                     }
                 else:
+                    sig["sentiment_score"] = sent_score
+                    sig["sentiment_label"] = sent_label
                     sizing = risk_engine.calculate_position_size(
                         _portfolio, current_price, sig["stop_loss"]
                     )
@@ -192,12 +208,23 @@ async def generate_signals(req: SignalRequest):
                     "MEDIUM" if atr_val / current_price > 0.015 else "LOW"
                 )
 
+                # Blend sentiment into the fallback score too
+                if sent_score is not None:
+                    sent_weight = settings.ml_sentiment_weight
+                    sent_proba = max(0.0, min(1.0, (sent_score + 1) / 2))
+                    probability = float(
+                        (1 - sent_weight) * probability + sent_weight * sent_proba
+                    )
+                    probability = float(np.clip(probability, 0.10, 0.95))
+
                 sig = {
                     "symbol": symbol,
                     "signal_date": date.today(),
                     "probability": probability,
                     "xgb_probability": None,
                     "lstm_probability": None,
+                    "sentiment_score": sent_score,
+                    "sentiment_label": sent_label,
                     "confidence_level": conf,
                     "direction": direction,
                     "atr": atr_val,
@@ -911,7 +938,17 @@ async def screen_universe(
     stock_data = await data_service.fetch_multiple(symbols, start=start)
     index_df = await data_service.fetch_index(start=start)
 
-    predictions = ensemble.predict_batch(stock_data, index_df)
+    # Fetch sentiment for all screened stocks
+    sentiment_scores: dict[str, float | None] = {}
+    for sym in list(stock_data.keys()):
+        try:
+            news_data = await fetch_stock_news(sym, max_articles=5)
+            if news_data and news_data.get("article_count", 0) > 0:
+                sentiment_scores[sym] = news_data["sentiment_score"]
+        except Exception:
+            pass
+
+    predictions = ensemble.predict_batch(stock_data, index_df, sentiment_scores=sentiment_scores)
 
     scored = []
     for sym, pred in predictions.items():

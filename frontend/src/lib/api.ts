@@ -6,6 +6,8 @@ export interface Signal {
   probability: number;
   xgb_probability: number | null;
   lstm_probability: number | null;
+  sentiment_score: number | null;
+  sentiment_label: string | null;
   confidence_level: string;
   direction: string;
   suggested_position_size: number | null;
