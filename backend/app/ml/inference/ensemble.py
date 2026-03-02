@@ -97,12 +97,22 @@ class EnsemblePredictor:
         df: pd.DataFrame,
         index_df: pd.DataFrame | None = None,
         sentiment_score: float | None = None,
+        sentiment_freshness: float = 0.0,
+        sentiment_article_count: int = 0,
     ) -> dict:
         """
         Generate ensemble prediction for a single stock's current state.
+
         df: recent OHLCV data (enough for feature warm-up, ~250+ rows).
-        sentiment_score: VADER compound score (-1 to +1) from recent news.
-        Returns dict with probabilities.
+        sentiment_score: recency-weighted VADER compound score (-1 to +1).
+        sentiment_freshness: fraction of articles from the last 24 h (0–1).
+        sentiment_article_count: number of articles used to compute the score.
+
+        Sentiment weight is DYNAMIC:
+          - Base weight = ml_sentiment_weight (15 %)
+          - Scales up to 25 % when freshness == 1 and article_count >= 5
+          - Falls to 5 % with stale / sparse news
+        Returns dict with probabilities and sentiment_contribution.
         """
         feat_df = compute_all_features(df, index_df)
 
@@ -129,22 +139,36 @@ class EnsemblePredictor:
                 self.xgb_weight * xgb_proba + self.lstm_weight * lstm_proba
             )
 
-        # ── Blend in news sentiment ────────────────────────
-        sentiment_weight = settings.ml_sentiment_weight
+        # ── Dynamic sentiment blending ─────────────────────────
+        base_weight = settings.ml_sentiment_weight   # 0.15
+
+        sentiment_contribution = 0.0
+        ensemble_proba = tech_proba
+
         if sentiment_score is not None and not np.isnan(sentiment_score):
+            # Scale weight: more fresh & more articles → higher impact
+            # freshness bonus: up to +0.08 (at freshness=1.0)
+            freshness_bonus = 0.08 * float(np.clip(sentiment_freshness, 0.0, 1.0))
+            # article count bonus: saturates at 5 articles → +0.02
+            count_bonus = 0.02 * float(np.clip(sentiment_article_count / 5.0, 0.0, 1.0))
+            sentiment_weight = float(np.clip(base_weight + freshness_bonus + count_bonus, 0.05, 0.25))
+
             # Map VADER compound (-1…+1) → probability-like (0…1)
-            sentiment_proba = np.clip((sentiment_score + 1) / 2, 0.0, 1.0)
+            sentiment_proba = float(np.clip((sentiment_score + 1) / 2, 0.0, 1.0))
             ensemble_proba = (
                 (1 - sentiment_weight) * tech_proba
                 + sentiment_weight * sentiment_proba
             )
+            # How much did sentiment shift the final probability?
+            sentiment_contribution = round(ensemble_proba - tech_proba, 4)
+
             logger.info(
                 f"Sentiment blended: tech={tech_proba:.4f}, "
                 f"sent_score={sentiment_score:.4f} → sent_proba={sentiment_proba:.4f}, "
-                f"final={ensemble_proba:.4f}"
+                f"weight={sentiment_weight:.3f} (freshness={sentiment_freshness:.2f}, "
+                f"n={sentiment_article_count}), final={ensemble_proba:.4f}, "
+                f"contribution={sentiment_contribution:+.4f}"
             )
-        else:
-            ensemble_proba = tech_proba
 
         # Feature snapshot for logging
         last_row = feat_df.iloc[-1]
@@ -153,6 +177,7 @@ class EnsemblePredictor:
             "xgb_probability": round(xgb_proba, 4),
             "lstm_probability": round(lstm_proba, 4) if not np.isnan(lstm_proba) else None,
             "sentiment_score": round(sentiment_score, 4) if sentiment_score is not None else None,
+            "sentiment_contribution": round(sentiment_contribution, 4),
             "atr": round(float(last_row.get("atr_14", 0)), 4),
             "rsi": round(float(last_row.get("rsi_14", 0)), 2),
             "regime": _regime_label(last_row),
@@ -169,13 +194,22 @@ class EnsemblePredictor:
         stock_data: dict[str, pd.DataFrame],
         index_df: pd.DataFrame | None = None,
         sentiment_scores: dict[str, float | None] | None = None,
+        sentiment_freshness: dict[str, float] | None = None,
+        sentiment_article_counts: dict[str, int] | None = None,
     ) -> dict[str, dict]:
         """Generate predictions for multiple stocks."""
         results = {}
         for symbol, df in stock_data.items():
             try:
                 sent = (sentiment_scores or {}).get(symbol)
-                results[symbol] = self.predict(df, index_df, sentiment_score=sent)
+                fresh = (sentiment_freshness or {}).get(symbol, 0.0)
+                count = (sentiment_article_counts or {}).get(symbol, 0)
+                results[symbol] = self.predict(
+                    df, index_df,
+                    sentiment_score=sent,
+                    sentiment_freshness=fresh,
+                    sentiment_article_count=count,
+                )
             except Exception as e:
                 logger.warning(f"Prediction failed for {symbol}: {e}")
                 results[symbol] = {"error": str(e)}

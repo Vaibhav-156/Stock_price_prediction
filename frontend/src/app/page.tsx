@@ -77,7 +77,10 @@ export default function Home() {
     buyCount: number;
     sellCount: number;
     holdCount: number;
-  }>({ buyCount: 0, sellCount: 0, holdCount: 0 });
+    marketOpen: boolean;
+    realtimeCount: number;
+  }>({ buyCount: 0, sellCount: 0, holdCount: 0, marketOpen: false, realtimeCount: 0 });
+  const [nextRefreshSecs, setNextRefreshSecs] = useState<number>(30);
 
   // News sentiment per selected stock
   const [stockSentiment, setStockSentiment] = useState<StockSentiment | null>(null);
@@ -115,6 +118,8 @@ export default function Home() {
         buyCount: resp.buy_count,
         sellCount: resp.sell_count,
         holdCount: resp.hold_count,
+        marketOpen: resp.market_open,
+        realtimeCount: resp.realtime_count,
       });
     } catch (e) {
       console.error("Intraday signals failed:", e);
@@ -130,41 +135,54 @@ export default function Home() {
       .catch(() => setApiOnline(false));
   }, [fetchQuotes, fetchIntraday]);
 
-  // Auto-refresh every 5s (quotes) + 30s (intraday) during Indian market hours
-  const intradayTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Auto-refresh: quotes every 5s during market hours; intraday signals 24/7
+  const intradayTimer  = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Intraday refresh interval: 30s when market is open, 3min when closed
+  const INTRADAY_OPEN_MS   = 30_000;
+  const INTRADAY_CLOSED_MS = 3 * 60_000;
+
   useEffect(() => {
     function startRefresh() {
       if (refreshTimer.current) clearInterval(refreshTimer.current);
       if (intradayTimer.current) clearInterval(intradayTimer.current);
-      if (isIndianMarketOpen()) {
-        refreshTimer.current = setInterval(() => {
-          fetchQuotes();
-        }, 5000);
-        // Refresh intraday signals every 30s during market hours
-        intradayTimer.current = setInterval(() => {
-          fetchIntraday();
-        }, 30000);
+      if (countdownTimer.current) clearInterval(countdownTimer.current);
+
+      const open = isIndianMarketOpen();
+      setMarketOpen(open);
+
+      // Quotes: only poll when market is open
+      if (open) {
+        refreshTimer.current = setInterval(fetchQuotes, 5000);
       }
+
+      // Intraday: ALWAYS poll (30s open, 3min closed)
+      const intradayInterval = open ? INTRADAY_OPEN_MS : INTRADAY_CLOSED_MS;
+      setNextRefreshSecs(intradayInterval / 1000);
+      intradayTimer.current = setInterval(() => {
+        fetchIntraday();
+        setNextRefreshSecs(isIndianMarketOpen() ? INTRADAY_OPEN_MS / 1000 : INTRADAY_CLOSED_MS / 1000);
+      }, intradayInterval);
+
+      // Countdown ticker (every second)
+      countdownTimer.current = setInterval(() => {
+        setNextRefreshSecs((s) => (s > 1 ? s - 1 : s));
+      }, 1000);
     }
 
     startRefresh();
 
-    // Re-check market hours every 60s (to start/stop refresh at open/close)
+    // Re-evaluate market status every 60s to switch intervals at open/close
     const marketCheck = setInterval(() => {
-      const open = isIndianMarketOpen();
-      setMarketOpen(open);
-      if (open && !refreshTimer.current) {
-        startRefresh();
-      } else if (!open && refreshTimer.current) {
-        clearInterval(refreshTimer.current);
-        refreshTimer.current = null;
-        if (intradayTimer.current) { clearInterval(intradayTimer.current); intradayTimer.current = null; }
-      }
-    }, 60000);
+      setMarketOpen(isIndianMarketOpen());
+      startRefresh();
+    }, 60_000);
 
     return () => {
-      if (refreshTimer.current) clearInterval(refreshTimer.current);
+      if (refreshTimer.current)  clearInterval(refreshTimer.current);
       if (intradayTimer.current) clearInterval(intradayTimer.current);
+      if (countdownTimer.current) clearInterval(countdownTimer.current);
       clearInterval(marketCheck);
     };
   }, [fetchQuotes, fetchIntraday]);
@@ -573,6 +591,9 @@ export default function Home() {
                 buyCount={intradayMeta.buyCount}
                 sellCount={intradayMeta.sellCount}
                 holdCount={intradayMeta.holdCount}
+                marketOpen={intradayMeta.marketOpen}
+                realtimeCount={intradayMeta.realtimeCount}
+                nextRefreshSecs={nextRefreshSecs}
               />
             </div>
 

@@ -30,6 +30,8 @@ class SignalOut(BaseModel):
     lstm_probability: Optional[float] = None
     sentiment_score: Optional[float] = Field(None, description="News sentiment VADER compound score (-1 to +1)")
     sentiment_label: Optional[str] = Field(None, description="BULLISH / BEARISH / NEUTRAL from news")
+    sentiment_contribution: Optional[float] = Field(None, description="How much news sentiment shifted the final probability (+/−)")
+    news_article_count: Optional[int] = Field(None, description="Number of news articles used for sentiment")
     confidence_level: str
     direction: str
     suggested_position_size: Optional[float] = None

@@ -58,19 +58,35 @@ export default function SignalDashboard({ signals, onSelect, selectedSymbol }: P
                 </td>
                 <td className="py-2.5 px-2">
                   {s.sentiment_label ? (
-                    <span
-                      className={clsx(
-                        "badge",
-                        s.sentiment_label === "BULLISH"
-                          ? "badge-bull"
-                          : s.sentiment_label === "BEARISH"
-                          ? "badge-bear"
-                          : "badge-sideways"
+                    <div className="flex flex-col gap-0.5">
+                      <span
+                        className={clsx(
+                          "badge",
+                          s.sentiment_label === "BULLISH"
+                            ? "badge-bull"
+                            : s.sentiment_label === "BEARISH"
+                            ? "badge-bear"
+                            : "badge-sideways"
+                        )}
+                      >
+                        {s.sentiment_label === "BULLISH" ? "▲" : s.sentiment_label === "BEARISH" ? "▼" : "◆"}{" "}
+                        {s.sentiment_score !== null ? s.sentiment_score.toFixed(2) : ""}
+                      </span>
+                      {s.sentiment_contribution != null && s.sentiment_contribution !== 0 && (
+                        <span
+                          className={clsx(
+                            "text-[10px] font-mono leading-none",
+                            s.sentiment_contribution > 0 ? "text-emerald-400" : "text-red-400"
+                          )}
+                          title={`Sentiment shifted probability by ${(s.sentiment_contribution * 100).toFixed(1)}%`}
+                        >
+                          {s.sentiment_contribution > 0 ? "+" : ""}{(s.sentiment_contribution * 100).toFixed(1)}% news
+                        </span>
                       )}
-                    >
-                      {s.sentiment_label === "BULLISH" ? "▲" : s.sentiment_label === "BEARISH" ? "▼" : "◆"}{" "}
-                      {s.sentiment_score !== null ? s.sentiment_score.toFixed(2) : ""}
-                    </span>
+                      {s.news_article_count != null && s.news_article_count > 0 && (
+                        <span className="text-[10px] text-slate-500">{s.news_article_count} articles</span>
+                      )}
+                    </div>
                   ) : (
                     <span className="text-slate-500 text-xs">—</span>
                   )}

@@ -84,6 +84,72 @@ class MarketDataService:
             self._batch_download_sync, symbols, start, end
         )
 
+    async def fetch_intraday_batch(
+        self,
+        symbols: list[str],
+        period: str = "5d",
+        interval: str = "5m",
+    ) -> dict[str, pd.DataFrame]:
+        """
+        Fetch real-time intraday OHLCV data (default 5m bars, last 5 days).
+        Returns a dict of {symbol: DataFrame} with DatetimeIndex (tz-aware).
+        Falls back gracefully if a symbol has no intraday data.
+        """
+        return await asyncio.to_thread(
+            self._intraday_batch_sync, symbols, period, interval
+        )
+
+    def _intraday_batch_sync(
+        self,
+        symbols: list[str],
+        period: str,
+        interval: str,
+    ) -> dict[str, pd.DataFrame]:
+        """Synchronous intraday batch download via yfinance."""
+        try:
+            raw = yf.download(
+                symbols,
+                period=period,
+                interval=interval,
+                auto_adjust=False,
+                threads=True,
+                group_by="ticker",
+                progress=False,
+            )
+        except Exception as exc:
+            logger.error(f"Intraday batch download failed: {exc}")
+            return {}
+
+        if raw is None or raw.empty:
+            return {}
+
+        out: dict[str, pd.DataFrame] = {}
+        for sym in symbols:
+            try:
+                if len(symbols) == 1:
+                    df = raw.copy()
+                else:
+                    if sym not in raw.columns.get_level_values(0):
+                        continue
+                    df = raw[sym].copy()
+
+                df = df.rename(columns={
+                    "Open": "open", "High": "high", "Low": "low",
+                    "Close": "close", "Adj Close": "adj_close", "Volume": "volume",
+                })
+                cols = [c for c in ["open", "high", "low", "close", "adj_close", "volume"] if c in df.columns]
+                if not cols:
+                    continue
+                df = df[cols]
+                if "adj_close" not in df.columns:
+                    df["adj_close"] = df["close"]
+                df = df.replace([np.inf, -np.inf], np.nan).dropna(subset=["close"])
+                if len(df) > 0:
+                    out[sym] = df
+            except Exception as ex:
+                logger.debug(f"Skipping intraday {sym}: {ex}")
+        return out
+
     def _batch_download_sync(
         self,
         symbols: list[str],

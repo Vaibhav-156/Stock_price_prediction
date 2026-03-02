@@ -8,6 +8,10 @@ export interface Signal {
   lstm_probability: number | null;
   sentiment_score: number | null;
   sentiment_label: string | null;
+  /** How much news sentiment shifted the final probability (+/-) */
+  sentiment_contribution: number | null;
+  /** Number of news articles used to compute sentiment */
+  news_article_count: number | null;
   confidence_level: string;
   direction: string;
   suggested_position_size: number | null;
@@ -138,6 +142,11 @@ export interface IntradaySignal {
   pivot: number;
   vwap: number;
   atr: number;
+  macd: number | null;
+  bb_position: number | null;
+  sentiment_score: number | null;
+  sentiment_bias: number | null;
+  data_source: "realtime_5m" | "daily_fallback";
 }
 
 export interface IntradayResponse {
@@ -146,6 +155,9 @@ export interface IntradayResponse {
   buy_count: number;
   sell_count: number;
   hold_count: number;
+  market_open: boolean;
+  realtime_count: number;
+  data_freshness_mins: number | null;
   timestamp: string;
 }
 
