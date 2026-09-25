@@ -962,6 +962,7 @@ async def list_stocks():
         "universe": data_service.ALL_STOCKS,
         "count": len(data_service.ALL_STOCKS),
         "index": data_service.INDEX_SYMBOL,
+        "names": getattr(data_service, "DISPLAY_NAMES", {}),
     }
 
 

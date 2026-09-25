@@ -251,7 +251,7 @@ export const api = {
 
   // Stocks
   getStocks: () =>
-    fetchAPI<{ universe: string[]; count: number }>("/api/v1/stocks"),
+    fetchAPI<{ universe: string[]; count: number; names?: Record<string, string> }>("/api/v1/stocks"),
 
   // Training
   trainModels: (symbols?: string[]) =>

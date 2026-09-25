@@ -55,6 +55,11 @@ class MarketDataService:
 
     ALL_STOCKS: list[str] = NIFTY50 + EXTRA_STOCKS
 
+    # Optional display names for symbols (overrides metadata from Yahoo when needed)
+    DISPLAY_NAMES: dict[str, str] = {
+        "JINDALPOLY.NS": "Jindal Poly Investment and Finance",
+    }
+
     INDEX_SYMBOL: str = "^NSEI"  # Nifty 50
 
     def __init__(self) -> None:

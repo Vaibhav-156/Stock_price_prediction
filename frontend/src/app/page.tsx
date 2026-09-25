@@ -48,7 +48,8 @@ const ALL_STOCKS = [...NIFTY50, ...EXTRA_STOCKS];
 
 export default function Home() {
   const [tab, setTab] = useState<Tab>("dashboard");
-  const [symbols] = useState<string[]>(ALL_STOCKS);
+  const [symbols, setSymbols] = useState<string[]>(ALL_STOCKS);
+  const [symbolNames, setSymbolNames] = useState<Record<string, string>>({});
   const [signals, setSignals] = useState<Signal[]>([]);
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
   const [priceData, setPriceData] = useState<PriceData[]>([]);
@@ -92,7 +93,7 @@ export default function Home() {
   const fetchQuotes = useCallback(async () => {
     setQuotesLoading(true);
     try {
-      const resp = await api.getQuotes(ALL_STOCKS);
+      const resp = await api.getQuotes(symbols);
       const map: Record<string, LiveQuote> = {};
       for (const q of resp.quotes) {
         map[q.symbol] = q;
@@ -107,6 +108,24 @@ export default function Home() {
     } finally {
       setQuotesLoading(false);
     }
+  }, []);
+
+  // Load universe and optional display names from backend
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const resp = await api.getStocks();
+        if (!mounted) return;
+        if (resp.universe && resp.universe.length > 0) setSymbols(resp.universe);
+        if (resp.names) setSymbolNames(resp.names);
+      } catch (e) {
+        console.error("Failed to load stocks:", e);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Fetch intraday signals
