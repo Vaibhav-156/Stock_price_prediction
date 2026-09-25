@@ -50,6 +50,7 @@ class MarketDataService:
         "PNB.NS", "IOB.NS", "RECLTD.NS", "PFC.NS",
         "NHPC.NS", "SJVN.NS", "TATAPOWER.NS", "ADANIGREEN.NS",
         "ADANIPOWER.NS", "SUZLON.NS", "IDEA.NS",
+        "JINDALPOLY.NS",
     ]
 
     ALL_STOCKS: list[str] = NIFTY50 + EXTRA_STOCKS

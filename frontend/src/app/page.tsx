@@ -40,6 +40,8 @@ const EXTRA_STOCKS = [
   "PNB.NS", "IOB.NS", "RECLTD.NS", "PFC.NS",
   "NHPC.NS", "SJVN.NS", "TATAPOWER.NS", "ADANIGREEN.NS",
   "ADANIPOWER.NS", "SUZLON.NS", "IDEA.NS",
+  // Added per user request
+  "JINDALPOLY.NS",
 ];
 
 const ALL_STOCKS = [...NIFTY50, ...EXTRA_STOCKS];
