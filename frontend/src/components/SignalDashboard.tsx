@@ -7,9 +7,10 @@ interface Props {
   signals: Signal[];
   onSelect: (symbol: string) => void;
   selectedSymbol: string | null;
+  displayNames?: Record<string, string>;
 }
 
-export default function SignalDashboard({ signals, onSelect, selectedSymbol }: Props) {
+export default function SignalDashboard({ signals, onSelect, selectedSymbol, displayNames }: Props) {
   const sorted = [...signals].sort((a, b) => b.probability - a.probability);
 
   return (
@@ -42,7 +43,7 @@ export default function SignalDashboard({ signals, onSelect, selectedSymbol }: P
                 )}
                 onClick={() => onSelect(s.symbol)}
               >
-                <td className="py-2.5 px-2 font-semibold">{s.symbol}</td>
+                <td className="py-2.5 px-2 font-semibold">{displayNames?.[s.symbol] ?? s.symbol.replace('.NS','')}</td>
                 <td className="py-2.5 px-2">
                   <div className="flex items-center gap-2">
                     <div className="w-20 bg-slate-700 rounded-full h-2">

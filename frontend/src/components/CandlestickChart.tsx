@@ -11,6 +11,7 @@ interface Props {
   takeProfit?: number | null;
   detail?: StockDetail | null;
   showPrediction?: boolean;
+  displayNames?: Record<string, string>;
 }
 
 export default function CandlestickChart({
@@ -20,6 +21,7 @@ export default function CandlestickChart({
   takeProfit,
   detail,
   showPrediction,
+  displayNames,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -190,8 +192,8 @@ export default function CandlestickChart({
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <h3 className="text-lg font-semibold">{symbol.replace(".NS", "")} Chart</h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-lg font-semibold">{displayNames?.[symbol] ?? symbol.replace(".NS", "")} Chart</h3>
           <div className="flex items-center gap-2 text-xs text-slate-400">
             <span className="flex items-center gap-1">
               <span className="w-3 h-[2px] bg-yellow-500 inline-block" /> SMA 20

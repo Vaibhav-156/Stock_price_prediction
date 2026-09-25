@@ -15,6 +15,7 @@ interface Props {
   marketOpen?: boolean;
   realtimeCount?: number;
   nextRefreshSecs?: number;
+  displayNames?: Record<string, string>;
 }
 
 type FilterAction = "ALL" | "BUY" | "SELL" | "HOLD";
@@ -30,6 +31,7 @@ export default function IntradayPanel({
   marketOpen = false,
   realtimeCount = 0,
   nextRefreshSecs = 30,
+  displayNames,
 }: Props) {
   const [filter, setFilter] = useState<FilterAction>("ALL");
   const [sortBy, setSortBy] = useState<"confidence" | "change" | "rr">("confidence");
@@ -210,7 +212,7 @@ export default function IntradayPanel({
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-bold text-white group-hover:text-green-300 transition-colors">
-                        {sig.symbol.replace(".NS", "")}
+                        {displayNames?.[sig.symbol] ?? sig.symbol.replace(".NS", "")}
                       </span>
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-green-500/20 text-green-400">
                         BUY
@@ -284,7 +286,7 @@ export default function IntradayPanel({
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-1.5">
                       <div>
-                        <div className="font-semibold text-slate-100">{sig.symbol.replace(".NS", "")}</div>
+                        <div className="font-semibold text-slate-100">{displayNames?.[sig.symbol] ?? sig.symbol.replace(".NS", "")}</div>
                         <div className={clsx("text-[10px] font-mono", up ? "text-profit" : "text-loss")}>
                           {up ? "+" : ""}{sig.change_pct.toFixed(2)}%
                         </div>

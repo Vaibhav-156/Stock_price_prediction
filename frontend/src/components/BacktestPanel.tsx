@@ -25,9 +25,10 @@ interface Props {
   equityCurve: EquityPoint[];
   metrics: Metrics | null;
   trades: any[];
+  displayNames?: Record<string, string>;
 }
 
-export default function BacktestPanel({ equityCurve, metrics, trades }: Props) {
+export default function BacktestPanel({ equityCurve, metrics, trades, displayNames }: Props) {
   const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -134,7 +135,7 @@ export default function BacktestPanel({ equityCurve, metrics, trades }: Props) {
               <tbody>
                 {trades.slice(-50).reverse().map((t, i) => (
                   <tr key={i} className="border-b border-card-border/30">
-                    <td className="py-1 px-1 font-semibold">{t.symbol}</td>
+                    <td className="py-1 px-1 font-semibold">{displayNames?.[t.symbol] ?? (t.symbol ?? '').replace('.NS','')}</td>
                     <td className="py-1 px-1 font-mono">₹{t.entry_price?.toFixed(2)}</td>
                     <td className="py-1 px-1 font-mono">₹{t.exit_price?.toFixed(2)}</td>
                     <td className={`py-1 px-1 font-mono ${t.pnl >= 0 ? "text-profit" : "text-loss"}`}>

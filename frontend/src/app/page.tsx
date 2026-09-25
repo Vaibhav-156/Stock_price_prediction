@@ -244,7 +244,7 @@ export default function Home() {
 
   // Auto-select first stock
   useEffect(() => {
-    if (!selectedSymbol) setSelectedSymbol(ALL_STOCKS[0]);
+    if (!selectedSymbol && symbols.length > 0) setSelectedSymbol(symbols[0]);
   }, [selectedSymbol]);
 
   // Fetch signals
@@ -350,12 +350,16 @@ export default function Home() {
     }
   };
 
-  // Search filtered stocks
+  // Search filtered stocks (by symbol or display name)
   const filteredStocks = useMemo(() => {
-    if (!searchQuery.trim()) return ALL_STOCKS;
+    if (!searchQuery.trim()) return symbols;
     const q = searchQuery.toUpperCase();
-    return ALL_STOCKS.filter((s) => s.replace(".NS", "").includes(q));
-  }, [searchQuery]);
+    return symbols.filter((s) => {
+      const symShort = s.replace('.NS', '').toUpperCase();
+      const name = (symbolNames[s] ?? '').toUpperCase();
+      return symShort.includes(q) || name.includes(q);
+    });
+  }, [searchQuery, symbols, symbolNames]);
 
   const selectedSignal = signals.find((s) => s.symbol === selectedSymbol) || null;
 
@@ -422,7 +426,7 @@ export default function Home() {
             {searchOpen && searchQuery && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-card-border rounded-lg shadow-xl max-h-64 overflow-y-auto z-50">
                 {filteredStocks.length > 0 ? (
-                  filteredStocks.map((sym) => (
+                  {filteredStocks.map((sym) => (
                     <button
                       key={sym}
                       onMouseDown={() => {
@@ -433,7 +437,7 @@ export default function Home() {
                       }}
                       className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-700 flex items-center justify-between"
                     >
-                      <span className="font-semibold">{sym.replace(".NS", "")}</span>
+                      <span className="font-semibold">{symbolNames[sym] ?? sym.replace(".NS", "")}</span>
                       <span className="text-xs text-slate-400">NSE</span>
                     </button>
                   ))
@@ -553,7 +557,7 @@ export default function Home() {
                           : "text-slate-300 hover:bg-slate-800"
                       }`}
                     >
-                      {sym.replace(".NS", "")}
+                      {symbolNames[sym] ?? sym.replace(".NS", "")}
                     </button>
                   ))}
                 </div>
@@ -570,6 +574,7 @@ export default function Home() {
                   takeProfit={selectedSignal?.take_profit}
                   detail={stockDetail}
                   showPrediction={true}
+                  displayNames={symbolNames}
                 />
               )}
 
@@ -615,6 +620,7 @@ export default function Home() {
                 marketOpen={intradayMeta.marketOpen}
                 realtimeCount={intradayMeta.realtimeCount}
                 nextRefreshSecs={nextRefreshSecs}
+                displayNames={symbolNames}
               />
             </div>
 
@@ -628,6 +634,7 @@ export default function Home() {
                 sentiment={stockSentiment}
                 sentimentLoading={sentimentLoading}
                 onRefreshSentiment={() => selectedSymbol && fetchSentiment(selectedSymbol)}
+                displayNames={symbolNames}
               />
 
               {/* Top Picks — high-probability signals */}
@@ -703,6 +710,7 @@ export default function Home() {
                   setTab("dashboard");
                 }}
                 selectedSymbol={selectedSymbol}
+                displayNames={symbolNames}
               />
           </div>
         )}
@@ -714,6 +722,7 @@ export default function Home() {
               equityCurve={backtestResult?.equity_curve || []}
               metrics={backtestResult?.metrics || null}
               trades={backtestResult?.trades || []}
+              displayNames={symbolNames}
             />
           </div>
         )}

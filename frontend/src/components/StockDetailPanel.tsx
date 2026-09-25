@@ -12,9 +12,10 @@ interface Props {
   sentiment?: StockSentiment | null;
   sentimentLoading?: boolean;
   onRefreshSentiment?: () => void;
+  displayNames?: Record<string, string>;
 }
 
-export default function StockDetailPanel({ detail, loading, liveQuote, signal, sentiment, sentimentLoading, onRefreshSentiment }: Props) {
+export default function StockDetailPanel({ detail, loading, liveQuote, signal, sentiment, sentimentLoading, onRefreshSentiment, displayNames }: Props) {
   if (loading) {
     return (
       <div className="card animate-pulse space-y-4">
@@ -48,7 +49,7 @@ export default function StockDetailPanel({ detail, loading, liveQuote, signal, s
         return (
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="text-lg font-bold">{detail.symbol.replace(".NS", "")}</h3>
+              <h3 className="text-lg font-bold">{displayNames?.[detail.symbol] ?? detail.symbol.replace(".NS", "")}</h3>
               <p className="text-xs text-slate-400">NSE • Nifty 50{liveQuote ? " • Live" : ""}</p>
             </div>
             <div className="text-right">
