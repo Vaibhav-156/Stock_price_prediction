@@ -426,7 +426,7 @@ export default function Home() {
             {searchOpen && searchQuery && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-card-border rounded-lg shadow-xl max-h-64 overflow-y-auto z-50">
                 {filteredStocks.length > 0 ? (
-                  {filteredStocks.map((sym) => (
+                  filteredStocks.map((sym) => (
                     <button
                       key={sym}
                       onMouseDown={() => {

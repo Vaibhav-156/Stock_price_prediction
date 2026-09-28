@@ -9,7 +9,6 @@ $FRONT  = Join-Path $ROOT "frontend"
 
 Set-Location $ROOT
 
-# Sanity checks
 if (-not (Test-Path $PYTHON)) {
     Write-Host "ERROR: .venv not found. Run: python -m venv .venv && .venv\Scripts\pip install -r backend\requirements.txt" -ForegroundColor Red
     Read-Host "Press Enter to exit"; exit 1
@@ -19,7 +18,7 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
     Read-Host "Press Enter to exit"; exit 1
 }
 
-# Install frontend deps on first run
+
 if (-not (Test-Path (Join-Path $FRONT "node_modules"))) {
     Write-Host "Installing frontend dependencies (first run)..." -ForegroundColor Yellow
     Push-Location $FRONT; npm install; Pop-Location
